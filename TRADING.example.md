@@ -19,7 +19,7 @@ Taipan reads it at session start; every grade, size and verdict is measured agai
 ## SOP (the only setups that exist)
 Name each rule. The plugin will refer to them by name.
 
-- **Rule 1 — HTF zone + M5 confirmation**: price taps a marked H4 supply/demand zone in the direction of D1 bias; enter on M5 BOS back in bias direction; SL beyond the zone; TP at next H4 level, minimum 1:2.
+- **Rule 1 — Behind the Candle**: D1 bias by body-close MSB → fresh H4 POI (BZ > OB > FVG) in bias direction → price enters POI → M15 Liquidity Raid + immediate MSB → M15 Breaker Zone in bias direction. Entry at BZ boundary, SL at the far edge of the BZ, TP at nearest liquidity, minimum 1:2. Handled by `/btc`.
 - **Rule 2 — ...**
 
 ## Stand-aside conditions

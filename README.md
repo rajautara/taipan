@@ -33,6 +33,7 @@ Copy `TRADING.example.md` to your project root as `TRADING.md` and write in your
 |-------|-----|
 | `/taipan` | Always-on mindset. Every trade question is worked through Context → Setup → Risk → Invalidation → Constraints and ends with a TAKE / WAIT / NO TRADE verdict. Levels: `desk` (default), `coach` (explains why), `strict` (refuses anything outside your SOP). |
 | `/premarket` | Session plan: bias, levels, news windows, Plan A / Plan B, stand-aside condition. Uses a TradingView connector when one is available. |
+| `/btc` | Behind the Candle (SMC) scan. `btc.py` finds D1 bias, H4 POIs (FVG / OB / Breaker Zone) and the M15 Entry Model from live OHLCV — body close only, wicks are never breaks — then every candidate goes through the Taipan checklist. |
 | `/trade-review` | Post-mortem graded against your SOP, not P&L. A–F, one thing to change. |
 
 ## What it will never do
