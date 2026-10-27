@@ -23,7 +23,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/bpb/bpb.py" h4.json --label H4
 ## 2. Build the read (in this order, in your head before you write)
 
 1. **Where are we.** D1 bias (body-close MSB) and whether it is settled or shifting. H4 agrees or not. One sentence of structure: last HH/HL or LH/LL, where the last break happened.
-2. **Where is price being drawn.** The nearest untouched liquidity in bias direction (PDH/PDL, PWH/PWL, unbroken H4 swing, equal highs/lows) — that is the target side. The nearest liquidity *behind* price — that is the sweep risk.
+2. **Where is price being drawn.** The nearest untouched liquidity in bias direction (PDH/PDL, PWH/PWL, unbroken H4 swing, `equal_highs` / `equal_lows` from `btc.py`) — that is the target side. The nearest liquidity *behind* price — that is the sweep risk.
 3. **Where will it react.** Merge the POI lists: BZ / OB / FVG from `btc.py`, demand / supply from `snd.py`, live retest zones from `bpb.py`. Keep only fresh (or lightly tested) ones in bias direction. **Confluence first:** a BZ sitting inside a demand zone, an FVG overlapping an OB, a zone at PDL — these outrank anything standing alone. Then departure strength, then proximity.
 4. **Best entry.** The top-ranked reaction level plus the SOP rule that would trigger there (TRADING.md; `/btc` Entry Model or `/snd` confirmation by default). Entry, SL, TP, RR. If RR < 2 to the nearest target, it is not the best entry; move to the next.
 5. **What we are waiting for.** Price to reach the level, then the M15 confirmation. Name the alert price. If price is already there and the confirmation printed, say TAKE and size it.

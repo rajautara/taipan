@@ -26,7 +26,7 @@ Then, for each file:
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/btc/btc.py" d1.json --label D1
 ```
 
-Output per timeframe: `bias` (direction of the last body-close MSB), `last_msb`, `raids`, and `pois` — each with `type` (FVG / OB / BZ), `dir`, `top`, `bottom`, `entry`, `sl`, `fresh`, `price_vs_zone`, `dist`. Timestamps are unix UTC; convert to the trader's time zone from TRADING.md.
+Output per timeframe: `bias` (direction of the last body-close MSB), `last_msb`, `raids`, `equal_highs` / `equal_lows` (unbroken structure points within 0.15 ATR of each other — liquidity pools, the book's EQH / EQL), and `pois` — each with `type` (FVG / OB / BZ), `dir`, `top`, `bottom`, `entry`, `sl`, `fresh`, `price_vs_zone`, `dist`. Timestamps are unix UTC; convert to the trader's time zone from TRADING.md.
 
 ## 2. Read it in the book's order
 

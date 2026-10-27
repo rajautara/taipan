@@ -118,8 +118,20 @@ def analyze(bars, max_body_atr=2.5, bz_lookback=5, ob_lookback=10):
         p["price_vs_zone"] = "inside" if p["bottom"] <= last <= p["top"] else ("above" if last > p["top"] else "below")
         p["dist"] = round(0 if p["price_vs_zone"] == "inside" else min(abs(last - p["top"]), abs(last - p["bottom"])), 3)
 
+    def equal(points, px, broken):  # 2+ unbroken points within 0.15 ATR of each other = a liquidity pool
+        pools, used = [], set()
+        for i in points:
+            if i in broken or i in used:
+                continue
+            grp = [k for k in points if k not in broken and k not in used and abs(px[k] - px[i]) <= 0.15 * a[-1]]
+            if len(grp) >= 2:
+                used.update(grp)
+                pools.append(dict(price=round(sum(px[k] for k in grp) / len(grp), 3), touches=len(grp), t=bars[grp[-1]]["t"]))
+        return pools
+
     return dict(
         bars=n, last_close=last, atr=round(a[-1], 3), bias=bias,
+        equal_highs=equal(sh, h, broken_sh), equal_lows=equal(sl, l, broken_sl),
         last_msb=msbs[-1] if msbs else None,
         structure_highs=[dict(i=i, t=bars[i]["t"], price=h[i], broken=i in broken_sh) for i in sh[-6:]],
         structure_lows=[dict(i=i, t=bars[i]["t"], price=l[i], broken=i in broken_sl) for i in sl[-6:]],
@@ -142,6 +154,10 @@ def selfcheck():
     assert r["raids"] and r["raids"][0]["raid"] == 6 and r["raids"][0]["msb"] == 7
     bz = [p for p in r["pois"] if p["type"] == "BZ"]
     assert bz and bz[0]["dir"] == "bear" and bz[0]["top"] == 12.5 and bz[0]["entry"] == bz[0]["bottom"]
+    # equal lows: two unbroken SLs at 8.0 and 8.02 -> one pool
+    oh2 = [(10, 10.5, 9, 9.5), (9.5, 9.6, 8.0, 9.2), (9.2, 9.8, 9.0, 9.6), (9.6, 9.7, 8.02, 9.3), (9.3, 9.9, 9.1, 9.7), (9.7, 9.9, 9.2, 9.6)]
+    r2 = analyze([dict(t=i, o=o, h=h, l=l, c=c) for i, (o, h, l, c) in enumerate(oh2)])
+    assert len(r2["equal_lows"]) == 1 and r2["equal_lows"][0]["touches"] == 2, r2["equal_lows"]
     print("selfcheck ok")
 
 
