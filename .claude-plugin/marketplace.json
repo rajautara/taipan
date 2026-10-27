@@ -1,0 +1,13 @@
+{
+  "name": "taipan",
+  "owner": {
+    "name": "Fairouse"
+  },
+  "plugins": [
+    {
+      "name": "taipan",
+      "source": "./",
+      "description": "Makes your AI agent think like the senior trader in the room."
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "taipan",
+  "version": "0.1.0",
+  "description": "Makes your AI agent think like the senior trader in the room: capital first, process over outcome, no call without an invalidation, and 'no trade' as a valid answer.",
+  "author": {
+    "name": "Fairouse"
+  },
+  "hooks": "./hooks/hooks.json"
+}
