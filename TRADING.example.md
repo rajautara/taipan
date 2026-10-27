@@ -20,7 +20,8 @@ Taipan reads it at session start; every grade, size and verdict is measured agai
 Name each rule. The plugin will refer to them by name.
 
 - **Rule 1 — Behind the Candle**: D1 bias by body-close MSB → fresh H4 POI (BZ > OB > FVG) in bias direction → price enters POI → M15 Liquidity Raid + immediate MSB → M15 Breaker Zone in bias direction. Entry at BZ boundary, SL at the far edge of the BZ, TP at nearest liquidity, minimum 1:2. Handled by `/btc`.
-- **Rule 2 — ...**
+- **Rule 2 — Supply & Demand**: D1/H4 RBR/DBR demand or RBD/DBD supply zone in bias direction, fresh preferred; price enters the zone; M15 body-close MSB in zone direction confirms. Entry at proximal edge, SL beyond distal edge, TP at nearest opposing zone, minimum 1:2. Handled by `/snd`.
+- **Rule 3 — ...**
 
 ## Stand-aside conditions
 - D1 and H4 bias disagree
