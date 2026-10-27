@@ -35,20 +35,23 @@ TRADING.md account constraints last; they override everything. Lot size from ris
 
 ## Reply format
 
-```
-<SYMBOL> — Breakout-Pullback, <date time local>
+Plain markdown, never a code block: the trader reads this on a phone at the screen. Short bold labels, one idea per line, prices in **bold**. Headings only if the reply has more than one section.
 
-Bias:        <bull|bear>
-Breakouts:   <dir> body close past <level> on <date>, <continuation|reversal>, zone <bottom>–<top> (<fvg|level-open>), <status>, age <n>
-             ...  (max 3, newest first)
-Trigger:     <resumed at <close> on <date> | waiting for close back above/below <edge> | price not in zone yet, alert <edge>>
+**<SYMBOL> — Breakout-Pullback, <date time local>**
 
-Bias:         <one line>
-Setup:        Breakout-Pullback — <H4|M15> <dir> <level>
-Risk:         entry <..> / SL <..> / TP <..> / RR <..> / lots <..>
-Invalidation: <body close back past <level>>
-Verdict:      TAKE | WAIT | NO TRADE — <reason>
-```
+- **Bias:** bull / bear
+- **Breakouts** (newest first, max 3): <dir> body close past <level> on <date>, continuation/reversal, zone <bottom–top> (fvg / level-open), <status>, age <n>
+- **Trigger:** resumed at <close> on <date> / waiting for close back above/below <edge> / price not in zone yet, alert <edge>
+
+End with the verdict table:
+
+| | |
+|---|---|
+| **Bias** | <one line> |
+| **Setup** | <SOP rule / method + zone, or "none"> |
+| **Risk** | entry <..> · SL <..> · TP <..> · RR <..> · lots <..> |
+| **Invalidation** | <body close beyond ..> |
+| **Verdict** | **TAKE / WAIT / NO TRADE** — <one reason> |
 
 ## Limits
 

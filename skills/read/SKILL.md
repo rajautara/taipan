@@ -33,25 +33,31 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/qm/qm.py" h4.json --label H4
 
 ## Reply format
 
-Spoken like a mentor, not a form. Short paragraphs, then the block.
+Plain markdown, never a code block: the trader reads this on a phone at the screen. Short bold labels, one idea per line, prices in **bold**. Headings only if the reply has more than one section.
 
-```
-<SYMBOL> — <date time local>
+Spoken like a mentor, in short paragraphs — not a form, not a table of everything.
 
-The read:      <2–4 sentences: structure, bias, where price is being drawn and why>
-Levels:        <target liquidity above/below · sweep risk · 2–3 reaction zones with type and confluence>
-Best entry:    <zone, rule, entry / SL / TP / RR> — <one line on why this beats the others>
-Also watching: <second candidate, one line>  |  <counter-trend level: "no entry, but it will show up on the chart">
-Waiting for:   <alert price + confirmation to watch>
-Breaks if:     <body close beyond ..>
-News:          <windows today or "clear">
+**<SYMBOL> — <date time local>**
 
-Bias:         <one line>
-Setup:        <method + zone, or "none yet">
-Risk:         <entry / SL / TP / RR / lots>
-Invalidation: <price or event>
-Verdict:      TAKE | WAIT | NO TRADE — <one reason>
-```
+**The read.** Two to four sentences: structure, bias, where price is being drawn and why.
+
+**Levels.** Target liquidity above/below · sweep risk · then the reaction zones as a short numbered list, each one line: price range, type, and the confluence that puts it there.
+
+**Best entry.** Zone, rule, entry / SL / TP / RR in **bold** — and one line on why it beats the others.
+
+**Also watching.** Second candidate in one line. Counter-trend level in one line: "no entry, but it will show up on the chart."
+
+**Waiting for.** Alert price + the confirmation to watch. **Breaks if:** the body close that flips the read. **News:** windows today, or "clear".
+
+End with the verdict table:
+
+| | |
+|---|---|
+| **Bias** | <one line> |
+| **Setup** | <SOP rule / method + zone, or "none"> |
+| **Risk** | entry <..> · SL <..> · TP <..> · RR <..> · lots <..> |
+| **Invalidation** | <body close beyond ..> |
+| **Verdict** | **TAKE / WAIT / NO TRADE** — <one reason> |
 
 ## Rules of the read
 

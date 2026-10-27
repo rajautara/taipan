@@ -16,18 +16,18 @@ If a TradingView connector is available, use it: OHLCV for D1/H4/H1 for the last
 
 ## Output
 
+Plain markdown, never a code block: the trader reads this on a phone at the screen. Short bold labels, one idea per line, prices in **bold**.
+
 Keep it to one screen.
 
-```
-<SYMBOL> — <date>, <session>
+**<SYMBOL> — <date>, <session>**
 
-Bias (D1/H4):   <direction + the structure that says so>
-Key levels:     <3–5 prices: HTF S/R, yesterday H/L, weekly open>
-News windows:   <time – time (local): event> ... or "none"
-No-trade zones: <ranges where SOP says stand aside, incl. news windows + buffer from TRADING.md>
-Plan A:         <if price does X at level Y → SOP rule Z, direction>
-Plan B:         <the opposite scenario>
-Stand aside if: <the condition that means no trade today>
-```
+- **Bias (D1/H4):** <direction + the structure that says so>
+- **Key levels:** 3–5 prices — HTF S/R, yesterday H/L, weekly open
+- **News windows:** <time – time local: event>, or "none"
+- **No-trade zones:** <ranges where SOP says stand aside, incl. news windows + buffer from TRADING.md>
+- **Plan A:** if price does X at level Y → SOP rule Z, direction
+- **Plan B:** the opposite scenario
+- **Stand aside if:** <the condition that means no trade today>
 
-Rules: levels are prices, not adjectives. Every plan line names an SOP rule. If the calendar makes most of the session a no-trade zone, say so up front — that is the brief.
+Rules: levels are prices, not adjectives. Every plan line names an SOP rule. If the calendar makes most of the session a no-trade zone, say so first — that is the brief.

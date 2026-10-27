@@ -31,11 +31,12 @@ Add: trades per day vs SOP maximum, consecutive losses and whether the trader st
 
 ## Reply format
 
-```
-<trade or day> — Grade <A|B|C|F>
-What was right: <one line>
-What was wrong: <one line, or "nothing">
-The one thing to change: <one line>
-```
+Plain markdown, never a code block: the trader reads this on a phone at the screen. Short bold labels, one idea per line, prices in **bold**.
+
+**<trade or day> — Grade A / B / C / F**
+
+- **What was right:** <one line>
+- **What was wrong:** <one line, or "nothing">
+- **The one thing to change:** <one line>
 
 No motivational talk. No "great job". If the trader did well, say "that was the SOP" and stop.

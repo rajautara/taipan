@@ -43,22 +43,26 @@ Account constraints from TRADING.md (news windows, daily loss, max lots) are che
 
 ## Reply format
 
-```
-<SYMBOL> — Behind the Candle, <date time local>
+Plain markdown, never a code block: the trader reads this on a phone at the screen. Short bold labels, one idea per line, prices in **bold**. Headings only if the reply has more than one section.
 
-D1 bias:    <bull|bear|shifting> — last MSB <dir> body close <level> on <date>
-H4 POIs:    <type dir bottom–top, fresh, price above/below/inside, dist>   (max 3, ranked)
-Liquidity:  PDH/PDL <..>, PWH/PWL <..>, next unbroken H4 swing <..>
-M15:        <Entry Model found: BZ dir bottom–top | none — price not in POI | none — no valid raid yet>
+**<SYMBOL> — Behind the Candle, <date time local>**
 
-Bias:         <one line>
-Setup:        Behind the Candle — <BZ|OB|FVG> H4 + BZ M15 | none
-Risk:         entry <..> / SL <..> / TP <..> / RR <..> / lots <..>
-Invalidation: <body close beyond ..>
-Verdict:      TAKE | WAIT | NO TRADE — <reason>
-```
+- **D1 bias:** bull / bear / shifting — last MSB <dir>, body close <level>, <date>
+- **H4 POIs** (ranked, max 3): <type dir bottom–top>, fresh, price above/below/inside, <dist> away
+- **Liquidity:** PDH/PDL <..>, PWH/PWL <..>, next unbroken H4 swing <..>
+- **M15:** Entry Model found — BZ <dir> <bottom–top> / none — price not in POI / none — no valid raid yet
 
-WAIT means: price has not reached the POI, or it has and the M15 Entry Model has not formed. Tell the trader what alert to set (POI boundary) and stop. Do not predict when it will form.
+WAIT always names the alert price (POI boundary) and the confirmation to watch. Never predict when it forms.
+
+End with the verdict table:
+
+| | |
+|---|---|
+| **Bias** | <one line> |
+| **Setup** | <SOP rule / method + zone, or "none"> |
+| **Risk** | entry <..> · SL <..> · TP <..> · RR <..> · lots <..> |
+| **Invalidation** | <body close beyond ..> |
+| **Verdict** | **TAKE / WAIT / NO TRADE** — <one reason> |
 
 ## Limits
 

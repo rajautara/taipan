@@ -34,21 +34,24 @@ TRADING.md account constraints last; they override everything. Lot size from ris
 
 ## Reply format
 
-```
-<SYMBOL> — Quasimodo, <date time local>
+Plain markdown, never a code block: the trader reads this on a phone at the screen. Short bold labels, one idea per line, prices in **bold**. Headings only if the reply has more than one section.
 
-Bias:      <bull|bear|shifting>
-QMs:       <dir> QML <..> · head <..> · L1 <..> · under on <date> · <waiting|at_qml> · RR <..> · age <n>
-           ...  (max 3, newest first)
-Context:   <HTF reason this reversal is allowed, or "counter-trend, no entry">
-Trigger:   <at QML, waiting M15 close | price <dist> away, alert <qml>>
+**<SYMBOL> — Quasimodo, <date time local>**
 
-Bias:         <one line>
-Setup:        QM — <H4|M15> <dir> QML <..>
-Risk:         entry <..> / SL <..> / TP <..> / RR <..> / lots <..>
-Invalidation: <body close beyond head <..>>
-Verdict:      TAKE | WAIT | NO TRADE — <reason>
-```
+- **Bias:** bull / bear / shifting
+- **QMs** (newest first, max 3): <dir> QML <..> · head <..> · L1 <..> · under <date> · waiting/at_qml · RR <..> · age <n>
+- **Context:** <HTF reason this reversal is allowed, or "counter-trend, no entry">
+- **Trigger:** at QML, waiting M15 close / price <dist> away, alert <qml>
+
+End with the verdict table:
+
+| | |
+|---|---|
+| **Bias** | <one line> |
+| **Setup** | <SOP rule / method + zone, or "none"> |
+| **Risk** | entry <..> · SL <..> · TP <..> · RR <..> · lots <..> |
+| **Invalidation** | <body close beyond ..> |
+| **Verdict** | **TAKE / WAIT / NO TRADE** — <one reason> |
 
 ## Limits
 

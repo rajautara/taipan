@@ -39,24 +39,26 @@ TRADING.md account constraints last; they override everything. Lot size from ris
 
 ## Reply format
 
-```
-<SYMBOL> — Supply & Demand, <date time local>
+Plain markdown, never a code block: the trader reads this on a phone at the screen. Short bold labels, one idea per line, prices in **bold**. Headings only if the reply has more than one section.
 
-Bias:        <bull|bear> — <how it was decided>
-Zones (in bias):
-  1. <D1|H4> <pattern> <bottom>–<top>  <fresh|tested>  departure <x> ATR  price <above|below|inside> (<dist>)
-  2. ...
-Counter-trend: <one line or "none">
-Confirmation: <M15 MSB <dir> at <level> | none — price not in zone | none — no close yet>
+**<SYMBOL> — Supply & Demand, <date time local>**
 
-Bias:         <one line>
-Setup:        S&D — <D1|H4> <pattern> <demand|supply>
-Risk:         entry <..> / SL <..> / TP <..> / RR <..> / lots <..>
-Invalidation: <body close beyond distal ..>
-Verdict:      TAKE | WAIT | NO TRADE — <reason>
-```
+- **Bias:** bull / bear — <how it was decided>
+- **Zones in bias** (ranked, max 3): <D1|H4> <pattern> <bottom–top>, fresh/tested, departure <x> ATR, price above/below/inside (<dist>)
+- **Counter-trend:** <one line or "none">
+- **Confirmation:** M15 MSB <dir> at <level> / none — price not in zone / none — no close yet
 
-WAIT means: set an alert at the proximal edge and stop. Do not predict whether the zone will hold.
+WAIT means: alert at the proximal edge, then stop. Do not predict whether the zone holds.
+
+End with the verdict table:
+
+| | |
+|---|---|
+| **Bias** | <one line> |
+| **Setup** | <SOP rule / method + zone, or "none"> |
+| **Risk** | entry <..> · SL <..> · TP <..> · RR <..> · lots <..> |
+| **Invalidation** | <body close beyond ..> |
+| **Verdict** | **TAKE / WAIT / NO TRADE** — <one reason> |
 
 ## Limits
 
