@@ -17,7 +17,7 @@ import btc  # noqa: E402
 import qm  # noqa: E402
 import snd  # noqa: E402
 
-for s in ("btc/btc.py", "snd/snd.py", "bpb/bpb.py", "qm/qm.py", "taipan/size.py", "taipan/now.py", "taipan/journal.py", "read/read.py", "backtest/backtest.py"):
+for s in ("btc/btc.py", "snd/snd.py", "bpb/bpb.py", "qm/qm.py", "taipan/size.py", "taipan/now.py", "taipan/journal.py", "read/read.py", "backtest/backtest.py", "backtest/sop.py"):
     subprocess.run([sys.executable, os.path.join(ROOT, s), "--selfcheck"], check=True, stdout=subprocess.DEVNULL)
 
 random.seed(11)
