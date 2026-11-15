@@ -12,7 +12,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "btc"))
-from btc import atr, load  # noqa: E402
+from btc import atr, load, stop  # noqa: E402
 
 BASE_VS_LEGOUT = 0.5   # base candle range <= 50% of the leg-out candle's range
 MAX_BASE = 5
@@ -30,7 +30,7 @@ def analyze(bars):
     rng = [max(h[i] - l[i], 1e-9) for i in range(n)]
     body = [abs(c[i] - o[i]) for i in range(n)]
     is_imp = [rng[i] >= IMPULSE_ATR * a[i] and body[i] >= IMPULSE_BODY_FRAC * rng[i] for i in range(n)]
-    up = [c[i] > o[i] for i in range(n)]
+    up = [c[i] > o[i] or (c[i] == o[i] and i > 0 and c[i] > c[i - 1]) for i in range(n)]  # a doji takes its direction from the previous close
 
     zones = []
     for out in range(2, n):  # for each impulse, walk back over the base it left
@@ -49,19 +49,21 @@ def analyze(bars):
         zones.append(dict(type="demand" if demand else "supply", pattern=pat, proximal=top if demand else bot,
                           distal=bot if demand else top, top=top, bottom=bot, base_len=j - i + 1,
                           i=i, t=bars[i]["t"], legout_i=out, departure_atr=round(rng[out] / a[out], 2),
-                          entry=top if demand else bot, sl=bot if demand else top))
+                          entry=top if demand else bot, sl=stop(bot if demand else top, demand, a[-1])))
 
     last = c[-1]
     for z in zones:  # status from the bars after the leg-out
         after = range(z["legout_i"] + 1, n)
         d = z["type"] == "demand"
         broken = any((c[x] < z["bottom"]) if d else (c[x] > z["top"]) for x in after)
-        touched = any((l[x] <= z["top"]) if d else (h[x] >= z["bottom"]) for x in after)
-        z["status"] = "broken" if broken else ("tested" if touched else "fresh")
+        hits = [x for x in after if ((l[x] <= z["top"]) if d else (h[x] >= z["bottom"]))]
+        z["touches"] = sum(1 for k, x in enumerate(hits) if k == 0 or x - hits[k - 1] > 1)  # separate visits
+        z["first_touch_i"] = hits[0] if hits else None
+        z["status"] = "broken" if broken else ("tested" if hits else "fresh")
         z["price_vs_zone"] = "inside" if z["bottom"] <= last <= z["top"] else ("above" if last > z["top"] else "below")
         z["dist"] = round(0 if z["price_vs_zone"] == "inside" else min(abs(last - z["top"]), abs(last - z["bottom"])), 3)
         # score: strong departure, short base, untouched. 0..10, for ranking only.
-        z["score"] = round(min(z["departure_atr"], 4) * 1.5 + (MAX_BASE - z["base_len"]) * 0.4 + {"fresh": 2, "tested": 0.5, "broken": -10}[z["status"]], 1)
+        z["score"] = round(min(z["departure_atr"], 4) * 1.5 + (MAX_BASE - z["base_len"]) * 0.4 + {"fresh": 2, "tested": 0.5, "broken": -10}[z["status"]] - 0.5 * max(z["touches"] - 1, 0), 1)
 
     live = [z for z in zones if z["status"] != "broken"]
     return dict(bars=n, last_close=last, atr=round(a[-1], 3),
@@ -80,6 +82,12 @@ def selfcheck():
     assert len(r["demand"]) == 1 and not r["supply"], r
     z = r["demand"][0]
     assert z["pattern"] == "DBR" and z["base_len"] == 2 and z["top"] == 10.4 and z["bottom"] == 9.8 and z["status"] == "fresh", z
+    assert z["sl"] < 9.8 and z["touches"] == 0, z  # stop beyond the distal edge
+    # price comes back twice (two separate visits), never closing below the zone -> tested, 2 touches
+    r2 = analyze(bars + [dict(t=10 + i, o=o, h=h, l=l, c=c) for i, (o, h, l, c) in enumerate(
+        [(12.8, 12.9, 10.3, 11.5), (11.5, 12.5, 11.4, 12.4), (12.4, 12.5, 10.2, 11.8)])])
+    z2 = [x for x in r2["demand"] if x["bottom"] == 9.8][0]
+    assert z2["status"] == "tested" and z2["touches"] == 2 and z2["first_touch_i"] == 10, z2
     print("selfcheck ok")
 
 

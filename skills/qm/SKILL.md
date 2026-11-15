@@ -10,13 +10,15 @@ QM is head-and-shoulders with rules instead of a shape. Bearish: a Structure Hig
 
 ## 1. Get the bars
 
-Symbol from TRADING.md (else ask once). TradingView `get_ohlcv`, `format: "columns"`, to the scratchpad: `d1.json` (1D, 120) for bias, `h4.json` (4h, 120), `m15.json` (15m, 300) when price is within 1 H4-ATR of a QML or `--m15` was passed.
+Symbol exactly as written in TRADING.md, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
+
+Files: `d1.json` (1D, 120) for bias, `h4.json` (4h, 120), `m15.json` (15m, 300) when price is within 1 H4-ATR of a QML or `--m15` was passed.
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/qm/qm.py" h4.json --label H4
 ```
 
-Output: `bias`, `setups` (newest first; failed ones removed) with `dir`, `qml`, `head`, `l1`, `under_i`, `t` (time of the under), `status` (`waiting` = price has not returned to the QML, `at_qml` = it has), `entry` (= QML), `sl` (= HEAD), `tp` (= L1), `rr`, `age`, `price_vs_qml`, `dist`.
+Output: `bias`, `setups` (newest first; failed and expired ones removed) with `dir`, `qml`, `head`, `l1`, `under_i`, `t` (time of the under), `status` (`waiting` = price has not returned to the QML, `at_qml` = it has), `entry` (= QML), `sl` (0.1 ATR beyond the HEAD), `tp` (= L1), `rr`, `age`, `price_vs_qml`, `dist`.
 
 ## 2. Read it
 
@@ -26,11 +28,14 @@ Output: `bias`, `setups` (newest first; failed ones removed) with `dir`, `qml`, 
    - `waiting` → WAIT. Alert at the QML. Do not chase the move away from it.
    - `at_qml` → confirmation needed before entry: on M15, a body-close MSB in the QM direction after the touch (run `btc.py` on m15.json), or the LTF confirmation TRADING.md names. Limit orders at the QML without confirmation only if TRADING.md allows it.
    - `failed` → removed. A body close beyond the head cancels the QM.
+   - `expired` → removed. Price returned to the QML and has since run 1R from it, or 10 bars have passed: the entry window is closed.
+
+   A QM whose QML-to-head distance is under 0.3 ATR or over 3 ATR is never listed: the first is noise, the second is not a stop anyone should trade.
 4. **RR.** TP at L1 is the conservative target; the next liquidity beyond it is the extended one. (TP − entry) / (SL − entry) ≥ 2 or SKIP. `rr` in the output is the L1 version.
 
 ## 3. Apply the Taipan checklist
 
-TRADING.md account constraints last; they override everything. Lot size from risk % and SL distance (QML to head), one line of arithmetic.
+TRADING.md account constraints last; they override everything. Lot size and net RR from `size.py`; limits from `journal.py status`.
 
 ## Reply format
 

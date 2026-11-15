@@ -4,17 +4,35 @@ Copy this file to the root of your project as `TRADING.md` and fill it in.
 Taipan reads it at session start; every grade, size and verdict is measured against it.
 
 ## Instrument & schedule
-- Symbol: XAUUSD
-- Sessions traded: London open, New York open (local time: Asia/Kuala_Lumpur)
-- Timeframes: bias D1/H4, setup H1, entry M5
+- Symbol: OANDA:XAUUSD (EXCHANGE:TICKER — pick the TradingView feed closest to your broker's price)
+- Time zone: Asia/Kuala_Lumpur
+- Sessions traded: London open, New York open
+- Timeframes: bias D1, zones H4, entry M15
+
+## Account (size.py reads these; keep the balance current)
+- Balance: 10000 USD
+- Risk per trade: 0.5% of balance
+- Contract size: 100 (units per 1.00 lot; XAUUSD = 100 oz)
+- Lot step / minimum lot: 0.01 / 0.01
+- Maximum lot: none
+- Typical spread: 0.30 (in price)
+- Commission: 0 per lot round turn
 
 ## Account constraints (hard rules — a setup that breaks one is NO TRADE)
-- Risk per trade: 0.5% of balance
 - Daily loss limit: 2% — stop trading for the day when hit
 - Max open positions: 1
 - Max trades per day: 3
+- Max consecutive losses per day: 2
 - News: no entries from 15 min before to 15 min after high-impact USD releases; no closing trades within 15 min after a release (prop-firm rule)
 - Stop loss: mandatory on every order, never widened after entry
+- Minimum reward-to-risk: 1:2 after spread and commission
+
+## Trade management (what /manage applies; leave a line out and it does not exist)
+- Breakeven: move the stop to entry when price reaches +1R
+- Partial: none
+- Trail: none — the trade ends at the stop or the target
+- Before news: stop to breakeven if the trade is past +0.5R, otherwise close 5 min before the window
+- Weekend: no positions held through the Friday close
 
 ## SOP (the only setups that exist)
 Name each rule. The plugin will refer to them by name.
@@ -27,5 +45,4 @@ Name each rule. The plugin will refer to them by name.
 
 ## Stand-aside conditions
 - D1 and H4 bias disagree
-- Consecutive losses today: 2
 - Any restricted news window

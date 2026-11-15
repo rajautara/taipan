@@ -10,13 +10,15 @@ A breakout is a **body close** past a Structure High/Low — the same MSB `btc.p
 
 ## 1. Get the bars
 
-Symbol from TRADING.md (else ask once). TradingView `get_ohlcv`, `format: "columns"`, to the scratchpad: `d1.json` (1D, 120) for bias, `h4.json` (4h, 120), and `m15.json` (15m, 300) when price is within 1 H4-ATR of an H4 retest zone or `--m15` was passed.
+Symbol exactly as written in TRADING.md, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
+
+Files: `d1.json` (1D, 120) for bias, `h4.json` (4h, 120), and `m15.json` (15m, 300) when price is within 1 H4-ATR of an H4 retest zone or `--m15` was passed.
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/bpb/bpb.py" h4.json --label H4
 ```
 
-Output: `bias`, and `setups` (newest first; failed breakouts removed) each with `dir`, `level`, `kind` (continuation / reversal), `zone_top`, `zone_bottom`, `zone_src` (`fvg` = the breakout left a gap, the tighter zone; `level-open` = broken level to breakout candle open), `status`, `pullback_extreme`, `entry`, `sl`, `age`, `price_vs_zone`.
+Output: `bias`, and `setups` (newest first; failed and expired ones removed, counted in `failed` / `expired`) each with `dir`, `level`, `kind` (continuation / reversal), `zone_top`, `zone_bottom`, `zone_src` (`fvg` = the breakout left a gap, the tighter zone; `level-open` = broken level to breakout candle open), `status`, `pullback_extreme`, `entry`, `sl` (0.1 ATR beyond the pullback extreme), `age`, `trigger_age`, `price_vs_zone`.
 
 ## 2. Read it
 
@@ -25,13 +27,13 @@ Output: `bias`, and `setups` (newest first; failed breakouts removed) each with 
 3. **Status decides the verdict.**
    - `waiting` → WAIT. Alert at `zone_top` (short) / `zone_bottom` (long). Nothing to do.
    - `in_pullback` → WAIT for the close. The trigger is a body close back out of the zone in the breakout direction. Drop to M15 for a tighter trigger: run `bpb.py` on m15.json and look for the same `resumed` on the M15 structure inside the H4 zone.
-   - `resumed` → candidate. Entry at the trigger close (or the zone edge on a limit retest, if TRADING.md allows), SL beyond `pullback_extreme`, TP at the next liquidity in the breakout direction.
+   - `resumed` → candidate, and only for a short time: `trigger_age` is the number of closed bars since the resume close. The script drops the setup (`expired`) once price has run 1R from that close or 3 bars have passed, because entering later is chasing. Entry at the trigger close (or the zone edge on a limit retest, if TRADING.md allows), SL = `sl`, TP at the next liquidity in the breakout direction.
    - `failed` → gone; `bpb.py` has already removed it. If the trader asks about it: the level was reclaimed by a body close, the breakout was false.
 4. **RR.** (TP − entry) / (entry − SL) ≥ 2 or SKIP. A deep pullback makes the SL wide; if the maths does not work, the setup does not exist.
 
 ## 3. Apply the Taipan checklist
 
-TRADING.md account constraints last; they override everything. Lot size from risk % and SL distance, one line of arithmetic.
+TRADING.md account constraints last; they override everything. Lot size and net RR from `size.py`; limits from `journal.py status`.
 
 ## Reply format
 

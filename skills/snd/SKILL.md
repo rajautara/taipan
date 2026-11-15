@@ -12,7 +12,9 @@ A zone is a **base** (1–5 candles, each no wider than half the leg-out candle)
 
 ## 1. Get the bars
 
-Symbol defaults to the one in TRADING.md (else ask once). TradingView `get_ohlcv`, `format: "columns"`, written to files in the scratchpad:
+Symbol exactly as written in TRADING.md, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
+
+Files:
 
 | File | interval | count |
 |------|----------|-------|
@@ -24,18 +26,18 @@ Symbol defaults to the one in TRADING.md (else ask once). TradingView `get_ohlcv
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/snd/snd.py" h4.json --label H4
 ```
 
-Output: `demand` and `supply` lists (broken zones already removed), each with `pattern`, `bottom`, `top`, `proximal`, `distal`, `entry`, `sl`, `base_len`, `departure_atr`, `status` (fresh / tested), `price_vs_zone`, `dist`, `score`. Lists are sorted by score; score is for ranking only, never quote it as a probability.
+Output: `demand` and `supply` lists (broken zones already removed), each with `pattern`, `bottom`, `top`, `proximal`, `distal`, `entry`, `sl`, `base_len`, `departure_atr`, `status` (fresh / tested), `touches` (separate visits since the zone formed), `price_vs_zone`, `dist`, `score`. Lists are sorted by score; score is for ranking only, never quote it as a probability.
 
 ## 2. Read it
 
 1. **Direction.** D1 bias from `btc.py` on d1.json (body-close MSB), or from TRADING.md's own bias rule if it names one. Bull → demand zones only. Bear → supply zones only. Zones against the bias are listed as *counter-trend, no entry*.
-2. **Zones.** Keep the top 3 in bias direction. Prefer: fresh over tested, D1 over H4 when they overlap, strong departure (≥ 2 ATR) over weak, short base over long. A tested zone is weaker; say so. A zone price has already traded through with a body close is gone — `snd.py` has removed it.
+2. **Zones.** Keep the top 3 in bias direction. Prefer: fresh over tested, D1 over H4 when they overlap, strong departure (≥ 2 ATR) over weak, short base over long. A tested zone is weaker, and weaker again with each visit (`touches`); say so. A zone price has already traded through with a body close is gone — `snd.py` has removed it.
 3. **Confirmation.** Only if price is inside a kept zone. Run `btc.py` on m15.json: a body-close MSB in the zone's direction, formed after price entered the zone, is the confirmation. If TRADING.md names its own confirmation (an H1 engulfing close, an M5 BOS), use that instead and say which rule you applied. No confirmation → WAIT.
-4. **RR.** Entry at the proximal edge, SL beyond the distal edge, target = nearest opposing zone or liquidity. (target − entry) / (entry − sl) ≥ 2 or SKIP.
+4. **RR.** Entry at the proximal edge, SL = the script's `sl` (0.1 ATR beyond the distal edge), target = nearest opposing zone or liquidity. (target − entry) / (entry − sl) ≥ 2 or SKIP.
 
 ## 3. Apply the Taipan checklist
 
-TRADING.md account constraints last; they override everything. Lot size from risk % and SL distance, one line of arithmetic.
+TRADING.md account constraints last; they override everything. Lot size and net RR from `size.py`; limits from `journal.py status`.
 
 ## Reply format
 

@@ -12,7 +12,9 @@ Rule #1 of the method: **no body close past the level = no break. A wick is neve
 
 ## 1. Get the bars
 
-Symbol defaults to the one in TRADING.md (else ask once). Use the TradingView `get_ohlcv` tool with `format: "columns"` and write each result to a file in the scratchpad:
+Symbol exactly as written in TRADING.md, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
+
+Files:
 
 | File | interval | count |
 |------|----------|-------|
@@ -26,7 +28,9 @@ Then, for each file:
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/btc/btc.py" d1.json --label D1
 ```
 
-Output per timeframe: `bias` (direction of the last body-close MSB), `last_msb`, `raids`, `equal_highs` / `equal_lows` (unbroken structure points within 0.15 ATR of each other — liquidity pools, the book's EQH / EQL), and `pois` — each with `type` (FVG / OB / BZ), `dir`, `top`, `bottom`, `entry`, `sl`, `fresh`, `price_vs_zone`, `dist`. Timestamps are unix UTC; convert to the trader's time zone from TRADING.md.
+`--swing K` widens a Structure High/Low to K candles each side (default 1, the book's 3-candle pattern). Use it only when TRADING.md says so or `/backtest` has shown it is better on this instrument.
+
+Output per timeframe: `bias` (direction of the last body-close MSB), `last_msb`, `raids`, `equal_highs` / `equal_lows` (unbroken structure points within 0.15 ATR of each other — liquidity pools, the book's EQH / EQL), and `pois` — each with `type` (FVG / OB / BZ), `dir`, `top`, `bottom`, `entry`, `sl`, `fresh`, `price_vs_zone`, `dist`. `sl` is already 0.1 ATR beyond the zone edge. An Order Block is the last opposite candle before the MSB that took the prior candle's liquidity and whose move away left an FVG. Timestamps are unix UTC; `read.py` prints them readable.
 
 ## 2. Read it in the book's order
 
@@ -39,7 +43,7 @@ A candidate that fails any step is not "almost there". It is SKIP. Say which ste
 
 ## 3. Apply the Taipan checklist
 
-Account constraints from TRADING.md (news windows, daily loss, max lots) are checked last and override everything. Lot size from risk % and the SL distance, one line of arithmetic.
+Account constraints from TRADING.md (news windows, daily loss, max lots) are checked last and override everything. Lot size and net RR from `size.py`; limits from `journal.py status`.
 
 ## Reply format
 
@@ -66,4 +70,4 @@ End with the verdict table:
 
 ## Limits
 
-`btc.py` does not model the book's body-sweep exception for Liquidity Raids, and uses body > 2.5×ATR as the "very big body" skip. Asia range liquidity is not computed. Say so if a setup hinges on one of these.
+`btc.py` does not model the book's body-sweep exception for Liquidity Raids, and uses body > 2.5×ATR as the "very big body" skip. The OB's "leaves an FVG" test is this plugin's reading of the book's imbalance rule. Asia range comes from `read.py`, not from this script. Say so if a setup hinges on one of these.

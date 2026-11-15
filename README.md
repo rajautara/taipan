@@ -27,6 +27,10 @@ Cowork: zip the folder and drop it into the plugin install dialog.
 
 Copy `TRADING.example.md` to your project root as `TRADING.md` and write in your own SOP and account rules. The plugin reads it at session start. Without it, the agent will ask for your rules before grading anything.
 
+Needs Python 3.9+ on the path. Market data and the economic calendar come from a TradingView connector; without one, Taipan asks you for levels and events instead of inventing them.
+
+Nothing here is financial advice or a promise of profit. Run `/backtest` on your own instrument before you trust any setup type with money.
+
 ## What you get
 
 | Skill | Use |
@@ -38,7 +42,21 @@ Copy `TRADING.example.md` to your project root as `TRADING.md` and write in your
 | `/snd` | Supply & Demand scan. `snd.py` finds fresh RBR / DBR demand and RBD / DBD supply zones on D1 and H4, ranks them by departure and freshness, confirms on M15 with a body-close MSB, then the Taipan checklist. |
 | `/bpb` | Breakout-Pullback scan. `bpb.py` takes the body-close breakouts `btc.py` finds, maps the retest zone each one left (its FVG or level-to-open), tracks the pullback (waiting / in pullback / resumed / failed) and gives the continuation entry with SL beyond the pullback extreme. |
 | `/qm` | Quasimodo scan. `qm.py` finds left shoulder → head that sweeps it → body close under/over the neckline, gives the QML entry level with SL beyond the head and TP at L1, and tracks waiting / at QML / failed. |
-| `/trade-review` | Post-mortem graded against your SOP, not P&L. A–F, one thing to change. |
+| `/manage` | You are already in the trade. Where it stands in R, whether the idea is still valid, and what your own management rules say to do now: hold, breakeven, partial, close before news. Never widens a stop. |
+| `/trade-review` | Post-mortem graded against your SOP, not P&L. A–F, one thing to change. Every reviewed trade is logged to `journal.csv`. |
+| `/backtest` | Walk-forward replay of the detectors on 3000+ real bars: trades, win rate, expectancy in R and drawdown per method. The floor your confirmation rules have to beat. |
+
+## The parts that are code, not judgment
+
+| Script | What it settles |
+|--------|-----------------|
+| `skills/taipan/now.py` | Local time, open sessions, market closed, and whether you are inside a news window. |
+| `skills/taipan/size.py` | Lot size from balance, risk %, stop distance, spread and commission; reward-to-risk after costs. |
+| `skills/taipan/journal.py` | `journal.csv`: trades today, P&L today, losing streak, and a BLOCKED line when a daily limit from your rules is reached. |
+| `skills/read/read.py` | All four detectors on D1 / H4 / M15 in one run, PDH/PDL, PWH/PWL, Asia range, and zones ranked by confluence. |
+| `skills/backtest/backtest.py` | The replay behind `/backtest`. |
+
+Every detector works on closed candles only and puts the stop 0.1 ATR beyond the zone. `python3 tests/test_all.py` runs every self-check plus mirror-symmetry and stop-sanity tests.
 
 ## What it will never do
 

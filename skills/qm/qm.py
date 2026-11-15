@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Quasimodo (QM) detector. Reuses btc.py structure points.
 
-usage: qm.py BARS.json [--label H4] [--last N]
+usage: qm.py BARS.json [--label H4] [--last N] [--swing K]
 Bearish QM: Structure High LS -> Structure Low L1 -> higher high HEAD (sweeps LS) -> body close under L1.
 QML = LS high (entry on return), SL above HEAD, TP = L1 / next liquidity. Bullish is the mirror.
 """
@@ -10,9 +10,11 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "btc"))
-from btc import analyze as structure, load  # noqa: E402
+from btc import SWING, analyze as structure, load, stop, swings  # noqa: E402
 
-MAX_AGE = 60  # bars since the MSB; older QMs are stale
+MAX_AGE = 60        # bars since the MSB; older QMs are stale
+MAX_TOUCH_AGE = 10  # bars since price first returned to the QML; after that the entry window has closed
+MIN_STOP_ATR, MAX_STOP_ATR = 0.3, 3.0  # QML-to-head distance: tighter is noise, wider is not a tradeable stop
 
 
 def pivots(s):
@@ -29,14 +31,15 @@ def pivots(s):
     return out
 
 
-def analyze(bars):
-    s = structure(bars, max_body_atr=99)
+def analyze(bars, swing=SWING):
+    s = structure(bars, max_body_atr=99, swing=swing)
     n = len(bars)
     h = [b["h"] for b in bars]
     l = [b["l"] for b in bars]
     c = [b["c"] for b in bars]
-    s["_sh"] = [dict(i=i, price=h[i]) for i in range(1, n - 1) if h[i] > h[i - 1] and h[i] > h[i + 1]]
-    s["_sl"] = [dict(i=i, price=l[i]) for i in range(1, n - 1) if l[i] < l[i - 1] and l[i] < l[i + 1]]
+    sh, sl_ = swings(h, l, swing)
+    s["_sh"] = [dict(i=i, price=h[i]) for i in sh]
+    s["_sl"] = [dict(i=i, price=l[i]) for i in sl_]
     pv = pivots(s)
     setups = []
     for k in range(len(pv) - 2):
@@ -49,6 +52,10 @@ def analyze(bars):
         if under is None or n - under > MAX_AGE:
             continue
         qml, head = pa, pc
+        if not MIN_STOP_ATR * s["atr"] <= abs(head - qml) <= MAX_STOP_ATR * s["atr"]:
+            continue
+        sl = stop(head, not bear, s["atr"])
+        risk = abs(sl - qml)
         status, trigger = "waiting", None
         for x in range(under + 1, n):
             if (c[x] > head) if bear else (c[x] < head):
@@ -56,15 +63,20 @@ def analyze(bars):
                 break
             if (h[x] >= qml) if bear else (l[x] <= qml):
                 status, trigger = "at_qml", trigger or x
+        if status == "at_qml":  # the entry is the return to the QML: once price has run 1R from it, or 10 bars have passed, it is gone
+            ran = any((qml - l[x] if bear else h[x] - qml) >= risk for x in range(trigger + 1, n))
+            if ran or n - 1 - trigger > MAX_TOUCH_AGE:
+                status = "expired"
         last = c[-1]
         setups.append(dict(dir="short" if bear else "long", ls_i=ia, l1=pb, head_i=ic, head=head, under_i=under,
                            t=bars[under]["t"], qml=qml, status=status, touch_i=trigger,
-                           entry=qml, sl=head, tp=pb, rr=round(abs(pb - qml) / max(abs(head - qml), 1e-9), 2),
+                           entry=qml, sl=sl, tp=pb, rr=round(abs(pb - qml) / risk, 2),
                            age=n - 1 - under, dist=round(abs(last - qml), 3),
                            price_vs_qml=("below" if last < qml else "above") if bear else ("above" if last > qml else "below")))
-    live = [x for x in setups if x["status"] != "failed"]
-    return dict(bars=n, last_close=c[-1], atr=s["atr"], bias=s["bias"],
-                setups=sorted(live, key=lambda x: x["age"]), failed=len(setups) - len(live))
+    live = [x for x in setups if x["status"] not in ("failed", "expired")]
+    return dict(bars=n, last_close=c[-1], last_t=bars[-1]["t"], atr=s["atr"], bias=s["bias"],
+                setups=sorted(live, key=lambda x: x["age"]),
+                failed=sum(x["status"] == "failed" for x in setups), expired=sum(x["status"] == "expired" for x in setups))
 
 
 def selfcheck():
@@ -74,9 +86,17 @@ def selfcheck():
           (10.6, 10.8, 10, 10.5), (10.5, 12.2, 10.3, 12), (12, 13, 11.8, 12.4), (12.4, 12.6, 10.8, 11),
           (11, 11.2, 8.8, 9), (9, 11, 8.9, 10.8), (10.8, 12.1, 10.7, 11.5), (11.5, 11.6, 11, 11.2)]
     bars = [dict(t=i, o=o, h=h, l=l, c=c) for i, (o, h, l, c) in enumerate(oh)]
-    r = analyze(bars)
+    r = analyze(bars, swing=1)
     qm = [x for x in r["setups"] if x["dir"] == "short" and x["qml"] == 12]
-    assert qm and qm[0]["head"] == 13 and qm[0]["under_i"] == 8 and qm[0]["status"] == "at_qml" and qm[0]["touch_i"] == 10 and qm[0]["rr"] == 2.0, r
+    assert qm and qm[0]["head"] == 13 and qm[0]["under_i"] == 8 and qm[0]["status"] == "at_qml" and qm[0]["touch_i"] == 10, r
+    assert qm[0]["sl"] > 13 and 1.5 < qm[0]["rr"] < 2.0, qm[0]  # stop beyond the head, so RR is a little under the raw 2.0
+    # price then runs 1R away from the QML: the entry is gone
+    r = analyze(bars + [dict(t=12, o=11.2, h=11.3, l=10.5, c=10.6)], swing=1)
+    assert not [x for x in r["setups"] if x["qml"] == 12] and r["expired"] == 1, r
+    # a head that barely clears the left shoulder gives a stop too tight to trade: rejected
+    tight = [dict(b) for b in bars]
+    tight[6]["h"] = 12.05
+    assert not [x for x in analyze(tight, swing=1)["setups"] if x["qml"] == 12]
     print("selfcheck ok")
 
 
@@ -88,6 +108,6 @@ if __name__ == "__main__":
     bars = load(sys.argv[1])
     if "--last" in args:
         bars = bars[-int(args[args.index("--last") + 1]):]
-    out = analyze(bars)
+    out = analyze(bars, swing=int(args[args.index("--swing") + 1]) if "--swing" in args else SWING)
     out["label"] = args[args.index("--label") + 1] if "--label" in args else ""
     print(json.dumps(out, indent=1))
