@@ -27,15 +27,22 @@ if (text) {
   out += "\n\nNo TRADING.md in this project. Ask the trader for their SOP and account constraints before grading any setup, and offer to save them to TRADING.md.";
 }
 
-// The "Time zone:" line of TRADING.md, else the machine's.
-const tz = (text.match(/time ?zone:\s*([A-Za-z_]+\/[A-Za-z_\/]+)/i) || [])[1] || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-const clock = py("now.py", ["--tz", tz]);
-if (clock) out += "\n\n# Clock at session start (goes stale: run now.py again before any verdict)\n\n" + clock;
-
-const journal = path.join(process.cwd(), "journal.csv");
-if (fs.existsSync(journal)) {
-  const st = py("journal.py", ["status", "--file", journal, "--tz", tz]);
+// The scripts read taipan.json (account numbers, limits, time zone) from the project root themselves.
+const cwd = process.cwd();
+const has = (f) => fs.existsSync(path.join(cwd, f));
+if (!has("taipan.json")) {
+  out += "\n\nNo taipan.json in this project: check.py cannot size or gate a trade. Ask the trader for balance, risk %, contract size, spread and daily limits, and offer to save them (copy taipan.example.json).";
+}
+const clock = py("now.py", []);
+if (clock) out += "\n\n# Clock at session start (goes stale: check.py reads the time again at every verdict)\n\n" + clock;
+if (has("journal.csv")) {
+  const st = py("journal.py", ["status"]);
   if (st) out += "\n\n# Journal today (journal.csv)\n\n" + st;
 }
+if (has("plan.json")) {
+  const pl = py("plan.py", ["show"]);
+  if (pl && pl !== "[]") out += "\n\n# Trades that are on (plan.json) — the trader is in these; use /manage\n\n" + pl;
+}
+if (has("backtest.json")) out += "\n\nbacktest.json holds this instrument's replay record; check.py quotes it per rule.";
 
 process.stdout.write(out);

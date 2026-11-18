@@ -12,7 +12,7 @@ Grade the process, not the result. A green trade that broke the SOP gets a low g
 
 Ask for whatever is missing, nothing more: entry, stop, target, exit, time, the SOP rule the trader thought they were following, and a screenshot if they have one. If TRADING.md exists, read it first; every grade below is against that document.
 
-Size is checked with `size.py` (the lots the SOP allowed for that entry and stop), not by eye. Once graded, every trade goes into the journal, win or lose:
+Size is checked with `size.py --entry <..> --sl <..>` (the lots the account allowed for that entry and stop), not by eye. A trade closed with `plan.py close` is already in `journal.csv`. Any other trade goes in once graded, win or lose:
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/journal.py" add --symbol <..> --rule "<SOP rule or none>" --dir long|short --entry <..> --sl <..> --exit <..> --lots <..> --r <..> --pnl <..> --grade <A-F> --note "<the one thing>" --time <close time, ISO UTC>
@@ -35,7 +35,7 @@ Grade: **A** followed the SOP in full · **B** one minor deviation · **C** a ru
 
 ## For a day or week
 
-Read `journal.csv` and run `journal.py status`. Add: trades per day vs SOP maximum, consecutive losses and whether the trader stopped when the SOP says to stop, the last-20 win rate and expectancy in R, and the one pattern that cost the most. One pattern, not a list.
+Read `journal.csv` and run `journal.py status` (limits come from `taipan.json`). Add: trades per day vs SOP maximum, consecutive losses and whether the trader stopped when the SOP says to stop, the last-20 win rate and expectancy in R, and the one pattern that cost the most. One pattern, not a list.
 
 ## Reply format
 

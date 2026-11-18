@@ -12,7 +12,7 @@ Rule #1 of the method: **no body close past the level = no break. A wick is neve
 
 ## 1. Get the bars
 
-Symbol exactly as written in TRADING.md, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
+Symbol is `symbol` in `taipan.json`, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
 
 Files:
 
@@ -43,7 +43,7 @@ A candidate that fails any step is not "almost there". It is SKIP. Say which ste
 
 ## 3. Apply the Taipan checklist
 
-Account constraints from TRADING.md (news windows, daily loss, max lots) are checked last and override everything. Lot size and net RR from `size.py`; limits from `journal.py status`.
+Account constraints from TRADING.md (news windows, daily loss, max lots) are checked last and override everything. Every candidate then goes through `check.py` (lots, net RR, news, session, daily limits, open risk): a BLOCK is NO TRADE.
 
 ## Reply format
 

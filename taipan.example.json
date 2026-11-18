@@ -1,0 +1,22 @@
+{
+  "symbol": "OANDA:XAUUSD",
+  "tz": "Asia/Kuala_Lumpur",
+  "balance": 10000,
+  "risk_pct": 0.5,
+  "contract": 100,
+  "lot_step": 0.01,
+  "min_lot": 0.01,
+  "max_lot": null,
+  "spread": 0.30,
+  "commission": 0,
+  "daily_loss_pct": 2,
+  "max_trades_per_day": 3,
+  "max_consec_losses": 2,
+  "max_open_positions": 1,
+  "min_rr": 2,
+  "min_stop_spreads": 5,
+  "sessions": ["London", "New York"],
+  "news_before_min": 15,
+  "news_after_min": 15,
+  "max_price_age_min": 15
+}

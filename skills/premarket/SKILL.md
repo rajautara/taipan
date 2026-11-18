@@ -10,17 +10,18 @@ Build the session plan before the first candle, so the trader is not deciding un
 
 ## Data
 
-Default symbol and session come from TRADING.md; otherwise ask once.
+Default symbol and sessions come from `taipan.json`; otherwise ask once.
 
 If a TradingView connector is available, use it: the same three `get_ohlcv` files `/read` uses (1D, 4h, 15m), and the economic calendar for today, filtered to high-impact events for the instrument's currencies (for XAUUSD: USD). Then:
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/read/read.py" --d1 <file> --h4 <file> --m15 <file>
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --tz <zone> --events <release times, ISO UTC> --before <min> --after <min>
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/journal.py" status --tz <zone> --balance <..> --daily-loss-pct <..> --max-trades <..> --max-consec <..>
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --events <release times, ISO UTC>
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/journal.py" status
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/plan.py" show
 ```
 
-Bias and key levels come from `read.py` (`bias`, `levels`), the news windows in local time from `now.py`, and what is left of today's limits from the journal. If there is no connector, ask the trader to paste the levels and today's red-folder events; do not invent either.
+Bias and key levels come from `read.py` (`bias`, `levels`), the news windows in local time from `now.py`, what is left of today's limits from the journal, and any trade still on from `plan.py show` (it comes first in the brief). If there is no connector, ask the trader to paste the levels and today's red-folder events; do not invent either.
 
 ## Output
 

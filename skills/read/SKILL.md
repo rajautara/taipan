@@ -10,11 +10,11 @@ This is the mentor sitting down next to the trader and talking through the chart
 
 ## 1. Data
 
-Symbol exactly as written in TRADING.md, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). Three TradingView `get_ohlcv` calls, `format: "columns"`: 1D (120 bars), 4h (120), 15m (300). When the harness saves a tool result to a file, pass that path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. Then:
+Symbol is `symbol` in `taipan.json`, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). Three TradingView `get_ohlcv` calls, `format: "columns"`: 1D (120 bars), 4h (120), 15m (300). When the harness saves a tool result to a file, pass that path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. Then:
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/skills/read/read.py" --d1 <file> --h4 <file> --m15 <file>
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --tz <zone> --events <today's high-impact release times, ISO UTC> --before <min> --after <min>
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --events <today's high-impact release times, ISO UTC>
 ```
 
 `read.py` prints one compact JSON:
@@ -32,10 +32,10 @@ Run a single detector by hand only when you need a field `read.py` leaves out.
 1. **Where are we.** D1 bias (body-close MSB) and whether it is settled or shifting. H4 agrees or not. One sentence of structure: last HH/HL or LH/LL, where the last break happened.
 2. **Where is price being drawn.** The nearest untouched liquidity in bias direction (PDH/PDL, PWH/PWL, unbroken H4 swing, `equal_highs` / `equal_lows` from `btc.py`) — that is the target side. The nearest liquidity *behind* price — that is the sweep risk.
 3. **Where will it react.** Take `zones` in the order given. QMLs are reversal candidates: list them even against bias, entry only with an HTF reason. Keep only fresh (or lightly tested) zones in bias direction. **Confluence first** (the `with` list): a BZ sitting inside a demand zone, an FVG overlapping an OB, a zone at PDL — these outrank anything standing alone. Then departure strength, then proximity.
-4. **Best entry.** The top-ranked reaction level plus the SOP rule that would trigger there (TRADING.md; `/btc` Entry Model or `/snd` confirmation by default). Entry, SL (the zone's `sl`), TP, then `size.py` for lots and `rr_net`. If `rr_net` < 2 to the nearest target, it is not the best entry; move to the next.
+4. **Best entry.** The top-ranked reaction level plus the SOP rule that would trigger there (TRADING.md; `/btc` Entry Model or `/snd` confirmation by default). Entry, SL (the zone's `sl`), TP, then `check.py` for lots, `rr_net` and the gate. If it blocks on reward-to-risk to the nearest target, it is not the best entry; move to the next.
 5. **What we are waiting for.** Price to reach the level, then the M15 confirmation. Name the alert price. If price is already there and the confirmation printed, say TAKE and size it.
 6. **What breaks the read.** The body close that flips bias, in a price.
-7. **Constraints.** `now.py` for the news windows, `journal.py status` for today's limits, the rest from TRADING.md. If the session is mostly a no-trade zone, say that up front, before the read.
+7. **Constraints.** `now.py` for the news windows; `check.py` has already applied the limits in `taipan.json`; anything else from TRADING.md. If the session is mostly a no-trade zone, say that up front, before the read.
 
 ## Reply format
 

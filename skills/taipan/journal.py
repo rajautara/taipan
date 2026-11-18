@@ -3,9 +3,10 @@
 
 usage: journal.py add --symbol XAUUSD --rule "Rule 3" --dir long --entry 4000 --sl 3990 --exit 4020 --lots 0.05
                       --r 2.0 --pnl 100 [--grade A] [--note "..."] [--time 2026-11-18T13:40Z] [--file journal.csv]
-       journal.py status [--tz Asia/Kuala_Lumpur] [--balance 10000] [--daily-loss-pct 2] [--max-trades 3] [--max-consec 2]
+       journal.py status
 status prints today's count, R and P&L, the losing streak, the last-20 expectancy, and BLOCKED reasons
-when a limit from TRADING.md is passed and has been reached. A day is a calendar day in --tz.
+when a limit in taipan.json has been reached (flags --tz --balance --daily-loss-pct --max-trades --max-consec
+override it). A day is a calendar day in the trader's zone. Closing a plan with plan.py logs here for you.
 """
 import argparse
 import csv
@@ -14,6 +15,9 @@ import os
 import sys
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config  # noqa: E402
 
 FIELDS = ["time", "symbol", "rule", "dir", "entry", "sl", "exit", "lots", "r", "pnl", "grade", "note"]
 
@@ -77,14 +81,15 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["add", "status"])
     ap.add_argument("--file", default="journal.csv")
-    ap.add_argument("--tz", default="UTC")
+    cfg = config.load()
+    ap.add_argument("--tz", default=cfg["tz"])
     ap.add_argument("--time")
     for k in FIELDS[1:]:
         ap.add_argument("--" + k)
-    for k in ("balance", "daily-loss-pct", "max-trades", "max-consec"):
-        ap.add_argument("--" + k, type=float)
+    for k, c in (("balance", "balance"), ("daily-loss-pct", "daily_loss_pct"), ("max-trades", "max_trades_per_day"), ("max-consec", "max_consec_losses")):
+        ap.add_argument("--" + k, type=float, default=cfg[c])
     a = ap.parse_args()
-    now = datetime.now(timezone.utc)
+    now = config.now()
     if a.cmd == "add":
         if a.r is None or not a.symbol:
             sys.exit("add needs at least --symbol and --r")

@@ -2,7 +2,8 @@
 """Walk-forward replay of the full SOP in TRADING.example.md: D1 bias -> H4 zone -> lower-timeframe confirmation.
 
 usage: sop.py --d1 D1.json --h4 H4.json --ltf M15.json [--rr 2] [--spread 0.3] [--swing K]
-              [--no-confirm] [--sessions "London,New York"]
+              [--no-confirm] [--sessions "London,New York"] [--write]
+--write saves the result to backtest.json in the project root; check.py quotes it before every trade.
 Each file is a long TradingView get_ohlcv result. The replay steps through the lower-timeframe bars;
 at each one it knows only the D1 / H4 / LTF candles that had closed by then.
 
@@ -69,7 +70,7 @@ def sop(d1, h4, ltf, rr=2.0, spread=0.0, swing=btc.SWING, confirm=True, sessions
             return
         r = outcome(ltf, k, long, entry, sl, entry + rr * risk if long else entry - rr * risk, limit)
         if r is not None:
-            trades.append((rule, (r * risk - spread) / risk if r > 0 else -(risk + spread) / risk))
+            trades.append((rule, (r * risk - spread) / risk if r > 0 else -(risk + spread) / risk, long))
 
     for k in range(LTF_WIN, len(ltf)):
         b, now = ltf[k], ltf[k]["t"] + step
@@ -126,8 +127,12 @@ def sop(d1, h4, ltf, rr=2.0, spread=0.0, swing=btc.SWING, confirm=True, sessions
                     del armed[key]
                     take(z["rule"], k, long, b["c"], z["sl"], False, now)
 
-    out = {r: stats([x for rule, x in trades if rule == r], rr) for r in ("btc", "snd", "bpb", "qm")}
-    out["all"] = stats([x for _, x in trades], rr)
+    out = {}
+    for r in ("btc", "snd", "bpb", "qm", "all"):
+        mine = [(x, lg) for rule, x, lg in trades if r in (rule, "all")]
+        out[r] = stats([x for x, _ in mine], rr)
+        if mine:  # a rule that only pays long in a rising market has shown that the market rose
+            out[r]["long"], out[r]["short"] = (stats([x for x, lg in mine if lg == side], rr) for side in (True, False))
     return out, log
 
 
@@ -148,6 +153,7 @@ def selfcheck():
     d1, h4 = agg(96), agg(16)
     res, log = sop(d1, h4, m15)
     assert res["all"]["trades"] > 0 and {"btc", "snd", "bpb", "qm"} <= set(res), res
+    assert res["all"]["long"]["trades"] + res["all"]["short"]["trades"] == res["all"]["trades"] and res["all"]["verdict"], res["all"]
     # no lookahead: cutting the future off must not change any decision already made (rule-1 fills excepted: they look ORDER_BARS ahead by design)
     cut = len(m15) * 2 // 3
     t_cut = m15[cut]["t"] - ORDER_BARS * 900
@@ -171,4 +177,7 @@ if __name__ == "__main__":
               sessions=[s.strip() for s in opt("--sessions", "", str).split(",") if s.strip()] or None)
     res, _ = sop(d1, h4, ltf, **kw)
     day = lambda t: datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d")  # noqa: E731
-    print(json.dumps(dict(period=f'{day(ltf[LTF_WIN]["t"])} to {day(ltf[-1]["t"])}', ltf_bars=len(ltf), settings=kw, results=res), indent=1))
+    out = dict(period=f'{day(ltf[LTF_WIN]["t"])} to {day(ltf[-1]["t"])}', ltf_bars=len(ltf), settings=kw, results=res)
+    if "--write" in a:
+        json.dump(out, open("backtest.json", "w"), indent=1)
+    print(json.dumps(out, indent=1))

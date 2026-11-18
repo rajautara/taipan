@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """The clock: current time, open sessions, market closed, and news windows. The model never guesses any of these.
 
-usage: now.py [--tz Asia/Kuala_Lumpur] [--events 2026-11-18T13:30Z,2026-11-18T19:00Z] [--before 15] [--after 15]
---events  high-impact release times (UTC, ISO) from the calendar; --before/--after are the SOP's window in minutes.
+usage: now.py [--events 2026-11-18T13:30Z,2026-11-18T19:00Z] [--tz Asia/Kuala_Lumpur] [--before 15] [--after 15]
+--events  high-impact release times (UTC, ISO) from the calendar. Zone and window minutes come from taipan.json
+unless a flag overrides them. TAIPAN_NOW=<ISO time> pins the clock.
 """
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config  # noqa: E402
 
 # Local cash-session hours; zoneinfo handles each city's daylight saving.
 SESSIONS = [("Asia", "Asia/Tokyo", 9, 15), ("London", "Europe/London", 8, 16.5), ("New York", "America/New_York", 8, 17)]
@@ -63,9 +68,10 @@ if __name__ == "__main__":
         selfcheck()
         sys.exit(0)
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tz", default="UTC")
+    cfg = config.load()
+    ap.add_argument("--tz", default=cfg["tz"])
     ap.add_argument("--events", default="")
-    ap.add_argument("--before", type=float, default=15)
-    ap.add_argument("--after", type=float, default=15)
+    ap.add_argument("--before", type=float, default=cfg["news_before_min"])
+    ap.add_argument("--after", type=float, default=cfg["news_after_min"])
     a = ap.parse_args()
-    print(json.dumps(clock(datetime.now(timezone.utc), a.tz, [e for e in a.events.split(",") if e], a.before, a.after), indent=1))
+    print(json.dumps(clock(config.now(), a.tz, [e for e in a.events.split(",") if e], a.before, a.after), indent=1))

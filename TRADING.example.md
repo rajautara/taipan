@@ -3,29 +3,17 @@
 Copy this file to the root of your project as `TRADING.md` and fill it in.
 Taipan reads it at session start; every grade, size and verdict is measured against it.
 
+## The numbers live in taipan.json
+Copy `taipan.example.json` to the project root as `taipan.json` and fill it in: symbol, time zone, balance, risk %, contract size, lot step, spread, commission, daily loss limit, max trades per day, max consecutive losses, max open positions, minimum reward-to-risk, sessions traded and the news window. The scripts read that file directly, so a limit is never retyped. Keep the balance current.
+
+This file is for the rules that are words, not numbers.
+
 ## Instrument & schedule
-- Symbol: OANDA:XAUUSD (EXCHANGE:TICKER — pick the TradingView feed closest to your broker's price)
-- Time zone: Asia/Kuala_Lumpur
-- Sessions traded: London open, New York open
 - Timeframes: bias D1, zones H4, entry M15
 
-## Account (size.py reads these; keep the balance current)
-- Balance: 10000 USD
-- Risk per trade: 0.5% of balance
-- Contract size: 100 (units per 1.00 lot; XAUUSD = 100 oz)
-- Lot step / minimum lot: 0.01 / 0.01
-- Maximum lot: none
-- Typical spread: 0.30 (in price)
-- Commission: 0 per lot round turn
-
-## Account constraints (hard rules — a setup that breaks one is NO TRADE)
-- Daily loss limit: 2% — stop trading for the day when hit
-- Max open positions: 1
-- Max trades per day: 3
-- Max consecutive losses per day: 2
-- News: no entries from 15 min before to 15 min after high-impact USD releases; no closing trades within 15 min after a release (prop-firm rule)
+## Account rules that are not in taipan.json
+- No closing trades within 15 min after a high-impact release (prop-firm rule)
 - Stop loss: mandatory on every order, never widened after entry
-- Minimum reward-to-risk: 1:2 after spread and commission
 
 ## Trade management (what /manage applies; leave a line out and it does not exist)
 - Breakeven: move the stop to entry when price reaches +1R

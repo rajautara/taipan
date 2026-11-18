@@ -10,7 +10,7 @@ QM is head-and-shoulders with rules instead of a shape. Bearish: a Structure Hig
 
 ## 1. Get the bars
 
-Symbol exactly as written in TRADING.md, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
+Symbol is `symbol` in `taipan.json`, in `EXCHANGE:TICKER` form so the feed matches the trader's broker (else ask once). TradingView `get_ohlcv`, `format: "columns"`. When the harness saves a tool result to a file, pass that file's path straight to the script; only write the JSON to the scratchpad yourself when it came back inline. The scripts drop the still-forming last candle on their own, so every "close" in the output is a real close.
 
 Files: `d1.json` (1D, 120) for bias, `h4.json` (4h, 120), `m15.json` (15m, 300) when price is within 1 H4-ATR of a QML or `--m15` was passed.
 
@@ -35,7 +35,7 @@ Output: `bias`, `setups` (newest first; failed and expired ones removed) with `d
 
 ## 3. Apply the Taipan checklist
 
-TRADING.md account constraints last; they override everything. Lot size and net RR from `size.py`; limits from `journal.py status`.
+TRADING.md account constraints last; they override everything. Every candidate then goes through `check.py` (lots, net RR, news, session, daily limits, open risk): a BLOCK is NO TRADE.
 
 ## Reply format
 

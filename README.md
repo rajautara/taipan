@@ -25,7 +25,12 @@ Cowork: zip the folder and drop it into the plugin install dialog.
 
 ## Setup
 
-Copy `TRADING.example.md` to your project root as `TRADING.md` and write in your own SOP and account rules. The plugin reads it at session start. Without it, the agent will ask for your rules before grading anything.
+Two files in your project root:
+
+- `taipan.json` (copy `taipan.example.json`): the numbers. Balance, risk %, contract size, spread, daily loss limit, max trades, sessions, news window. The scripts read it directly.
+- `TRADING.md` (copy `TRADING.example.md`): the words. Your SOP rules and trade management.
+
+The plugin reads both at session start. Without them, the agent asks for your rules before grading or sizing anything.
 
 Needs Python 3.9+ on the path. Market data and the economic calendar come from a TradingView connector; without one, Taipan asks you for levels and events instead of inventing them.
 
@@ -50,13 +55,15 @@ Nothing here is financial advice or a promise of profit. Run `/backtest` on your
 
 | Script | What it settles |
 |--------|-----------------|
+| `skills/taipan/check.py` | The gate. One run sizes the entry and checks it against every limit in `taipan.json`: stop present and not too tight, reward-to-risk after costs, news window, session, trades today, losing streak, open positions, and the daily loss limit counting the risk of trades still on. PASS or BLOCK with reasons, plus the rule's backtest record. |
+| `skills/taipan/plan.py` | `plan.json`: the trades that are on. Keeps the original stop, refuses to widen it, and logs R and P&L to the journal on close. |
 | `skills/taipan/now.py` | Local time, open sessions, market closed, and whether you are inside a news window. |
 | `skills/taipan/size.py` | Lot size from balance, risk %, stop distance, spread and commission; reward-to-risk after costs. |
-| `skills/taipan/journal.py` | `journal.csv`: trades today, P&L today, losing streak, and a BLOCKED line when a daily limit from your rules is reached. |
+| `skills/taipan/journal.py` | `journal.csv`: trades today, P&L today, losing streak, last-20 expectancy. |
 | `skills/read/read.py` | All four detectors on D1 / H4 / M15 in one run, PDH/PDL, PWH/PWL, Asia range, and zones ranked by confluence. |
 | `skills/backtest/backtest.py`, `sop.py` | The replays behind `/backtest`: one timeframe, and the full multi-timeframe SOP. |
 
-Every detector works on closed candles only and puts the stop 0.1 ATR beyond the zone. `python3 tests/test_all.py` runs every self-check plus mirror-symmetry and stop-sanity tests.
+Every detector works on closed candles only and puts the stop 0.1 ATR beyond the zone. An exit is never gated. `TAIPAN_NOW=<ISO time>` in front of any script reproduces a past run. `python3 tests/test_all.py` runs every self-check plus mirror-symmetry and stop-sanity tests.
 
 ## What it will never do
 

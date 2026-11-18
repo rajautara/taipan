@@ -10,15 +10,16 @@ The decision to enter is over. This skill only answers: what does the SOP say to
 
 ## Input
 
-Ask only for what is missing: direction, entry, current stop, target, lots, and the SOP rule the trade was taken on. Current price from TradingView `get_symbol_data` when a connector is available, else from the trader.
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/plan.py" show
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --events <today's high-impact release times, ISO UTC>
+```
 
-```
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --tz <zone> --events <today's high-impact release times, ISO UTC> --before <min> --after <min>
-```
+`plan.py show` is the trade as it was gated: `entry`, `sl` (the original stop, never changes), `sl_now` (where the stop is after any trailing), `tp`, `lots`, `rule`, `invalidation`. Use those numbers, not the trader's memory of them. If the trade is not in `plan.json`, ask only for what is missing: direction, entry, original stop, target, lots, rule. Current price from TradingView `get_symbol_data` when a connector is available, else from the trader.
 
 ## Work out, in this order
 
-1. **Where the trade stands in R.** (price − entry) / (entry − original stop) for a long, mirrored for a short. One number.
+1. **Where the trade stands in R.** (price − entry) / (entry − `sl`) for a long, mirrored for a short, always against the original `sl`, never `sl_now`. One number.
 2. **Is the idea still valid.** The invalidation named at entry: has a candle *closed* beyond it? If yes, the SOP exit is now, wherever the stop sits. A wick is not a close.
 3. **What the Trade management section of TRADING.md says at this R.** Breakeven trigger, partial, trail, time stop. Apply exactly that. If TRADING.md has no management section, say so, apply nothing by invention, and tell the trader the only two SOP outcomes are stop or target; offer to add a management rule to TRADING.md *after* this trade, not during it.
 4. **News.** `now.py`: if a restricted window starts before the trade can reasonably reach target, apply the SOP's pre-news rule (close, reduce, or hold with stop at breakeven). `minutes_to_window` is the number to quote.
@@ -42,4 +43,11 @@ Plain markdown, never a code block. One screen.
 - **Do:** HOLD / MOVE STOP TO **<price>** / CLOSE **<fraction>** / CLOSE ALL — <one reason>
 - **Next decision at:** **<price>** (<what happens there>) · **News:** <window, minutes away, or "clear">
 
-When the trade is closed, log it with `journal.py add` and offer `/trade-review`.
+Carry the decision out in the file as well, once the trader confirms they did it at the broker:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/plan.py" stop <id> --to <price>
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/plan.py" close <id> --exit <price>
+```
+
+`stop` refuses any price further from the entry than the current stop; that refusal is final. `close` works out R and P&L and logs the trade to the journal, then offer `/trade-review`. Nothing here checks an exit against a limit: getting out is always allowed.

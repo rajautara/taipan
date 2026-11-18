@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Position size from account risk. Money arithmetic is done here, never in the model's head.
 
-usage: size.py --balance 10000 --risk-pct 0.5 --entry 3979.6 --sl 3993.4 [--tp 3950]
-               [--contract 100] [--lot-step 0.01] [--min-lot 0.01] [--max-lot N]
-               [--spread 0.30] [--commission 7]
+usage: size.py --entry 3979.6 --sl 3993.4 [--tp 3950]
+Account numbers come from taipan.json in the project root; any of them can be overridden with a flag:
+               [--balance 10000] [--risk-pct 0.5] [--contract 100] [--lot-step 0.01] [--min-lot 0.01]
+               [--max-lot N] [--spread 0.30] [--commission 7] [--min-stop-spreads 5]
 --contract    units per 1.00 lot (XAUUSD 100 oz, FX 100000)
 --spread      in price units, added to the stop distance and taken off the target distance
 --commission  per 1.00 lot round turn, in account currency
@@ -12,13 +13,19 @@ shortcut: assumes the account currency is the quote currency (USD account, XAUUS
 import argparse
 import json
 import math
+import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import config  # noqa: E402
 
-def size(balance, risk_pct, entry, sl, tp=None, contract=100, lot_step=0.01, min_lot=0.01, max_lot=None, spread=0.0, commission=0.0):
+
+def size(balance, risk_pct, entry, sl, tp=None, contract=100, lot_step=0.01, min_lot=0.01, max_lot=None, spread=0.0, commission=0.0, min_stop_spreads=0):
     dist = abs(entry - sl)
     if dist <= 0:
         return dict(verdict="NO TRADE", reason="stop is at the entry: no stop, no trade")
+    if spread and dist < min_stop_spreads * spread:
+        return dict(verdict="NO TRADE", reason=f"stop too tight: {round(dist, 5)} is under {min_stop_spreads} spreads ({round(min_stop_spreads * spread, 5)}); normal noise would take it out")
     budget = balance * risk_pct / 100
     loss_per_lot = (dist + spread) * contract + commission
     lots = math.floor(budget / loss_per_lot / lot_step + 1e-9) * lot_step
@@ -40,6 +47,9 @@ def size(balance, risk_pct, entry, sl, tp=None, contract=100, lot_step=0.01, min
     return out
 
 
+ACCOUNT = ("balance", "risk_pct", "contract", "lot_step", "min_lot", "max_lot", "spread", "commission", "min_stop_spreads")
+
+
 def selfcheck():
     r = size(10000, 0.5, 4000, 3990, tp=4020)
     assert r["lots"] == 0.05 and r["risk_money"] == 50 and r["rr_net"] == 2.0, r
@@ -50,6 +60,8 @@ def selfcheck():
     assert size(10000, 0.5, 4000, 4000)["verdict"] == "NO TRADE"
     assert size(10000, 0.5, 4000, 3990, tp=3980)["verdict"] == "NO TRADE"
     assert size(1e6, 1, 4000, 3990, max_lot=2)["lots"] == 2
+    assert size(10000, 0.5, 4000, 3999, spread=0.3, min_stop_spreads=5)["verdict"] == "NO TRADE"  # 1.0 stop < 5 x 0.3
+    assert "lots" in size(10000, 0.5, 4000, 3998, spread=0.3, min_stop_spreads=5)
     print("selfcheck ok")
 
 
@@ -58,13 +70,13 @@ if __name__ == "__main__":
         selfcheck()
         sys.exit(0)
     ap = argparse.ArgumentParser()
-    for k in ("balance", "risk-pct", "entry", "sl"):
-        ap.add_argument("--" + k, type=float, required=True)
+    ap.add_argument("--entry", type=float, required=True)
+    ap.add_argument("--sl", type=float, required=True)
     ap.add_argument("--tp", type=float)
-    ap.add_argument("--contract", type=float, default=100)
-    ap.add_argument("--lot-step", type=float, default=0.01)
-    ap.add_argument("--min-lot", type=float, default=0.01)
-    ap.add_argument("--max-lot", type=float)
-    ap.add_argument("--spread", type=float, default=0.0)
-    ap.add_argument("--commission", type=float, default=0.0)
-    print(json.dumps(size(**vars(ap.parse_args())), indent=1))
+    for k in ACCOUNT:
+        ap.add_argument("--" + k.replace("_", "-"), type=float)
+    a, cfg = vars(ap.parse_args()), config.load()
+    kw = {k: a[k] if a[k] is not None else cfg[k] for k in ACCOUNT}
+    if kw["balance"] is None or kw["risk_pct"] is None:
+        sys.exit("balance and risk_pct are not set: put them in taipan.json (copy taipan.example.json) or pass --balance and --risk-pct")
+    print(json.dumps(size(entry=a["entry"], sl=a["sl"], tp=a["tp"], **kw), indent=1))

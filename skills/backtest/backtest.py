@@ -84,17 +84,31 @@ def run(bars, method, swing=btc.SWING, rr=2.0, spread=0.0, window=300, bias=Fals
     return stats(res, rr)
 
 
+MIN_TRADES = 100  # under this the result is noise, whatever it says
+
+
+def verdict(n, win_rate, rr):
+    """One line from the numbers, so nobody rounds a coin flip up into an edge."""
+    if not n:
+        return "No trades."
+    edge = win_rate - 100 / (1 + rr)  # points above the win rate this RR needs to break even
+    lean = "Close to break-even" if abs(edge) < 5 else ("Leans " if abs(edge) < 15 else "Strongly ") + ("positive" if edge > 0 else "negative")
+    return f"{lean}: {win_rate}% winners against the {round(100 / (1 + rr), 1)}% needed." + (f" Only {n} trades: too few to conclude." if n < MIN_TRADES else "")
+
+
 def stats(res, rr):
     if not res:
-        return dict(trades=0)
+        return dict(trades=0, verdict=verdict(0, 0, rr))
     eq = peak = dd = 0.0
     for r in res:
         eq += r
         peak = max(peak, eq)
         dd = max(dd, peak - eq)
     wins = sum(r > 0 for r in res)
-    return dict(trades=len(res), win_rate=round(100 * wins / len(res), 1), breakeven_win_rate=round(100 / (1 + rr), 1),
-                expectancy_r=round(sum(res) / len(res), 3), total_r=round(sum(res), 1), max_drawdown_r=round(dd, 1))
+    wr = round(100 * wins / len(res), 1)
+    return dict(trades=len(res), win_rate=wr, breakeven_win_rate=round(100 / (1 + rr), 1),
+                expectancy_r=round(sum(res) / len(res), 3), total_r=round(sum(res), 1), max_drawdown_r=round(dd, 1),
+                verdict=verdict(len(res), wr, rr))
 
 
 def selfcheck():
@@ -106,6 +120,9 @@ def selfcheck():
     assert outcome(bars, 1, True, 10, 7, 30, True) is None       # never resolved
     assert outcome(mk([(10, 10, 10, 10), (10, 12.5, 8.5, 11)]), 0, True, 10, 9, 12, False) == -1.0  # both in one bar = loss
     s = stats([2, -1, -1, 2, -1], 2)
+    assert s["verdict"].startswith("Leans positive") and "too few" in s["verdict"], s
+    assert verdict(200, 35.0, 2).startswith("Close to break-even") and "too few" not in verdict(200, 35.0, 2)
+    assert verdict(200, 20.0, 1).startswith("Strongly negative") and verdict(0, 0, 2) == "No trades."
     assert s["trades"] == 5 and s["win_rate"] == 40 and s["expectancy_r"] == 0.2 and s["max_drawdown_r"] == 2 and s["breakeven_win_rate"] == 33.3, s
     # smoke: every method replays a random walk without error and never reports more wins than trades
     import random

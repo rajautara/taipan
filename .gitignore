@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 TRADING.md
 journal.csv
+taipan.json
+plan.json
+backtest.json

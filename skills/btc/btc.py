@@ -7,8 +7,10 @@ structure points, MSBs, bias, and POIs (FVG / Order Block / Breaker Zone) with f
 Rules from "Behind the Candle" (SureShotFX): wick is never a break, body close is.
 """
 import json
+import os
 import sys
 import time
+from datetime import datetime
 
 SWING = 1             # bars each side of a Structure High/Low. 1 = the book's 3-candle pattern; test others with backtest.py --swing
 SL_BUFFER_ATR = 0.1   # stop goes this far beyond the zone edge / extreme; spread is added by size.py
@@ -24,7 +26,8 @@ def load(path, now=None):
     # The feed's last bar is still forming while the market is open: it has no body close yet, so drop it.
     if len(bars) > 2:
         step = min(q["t"] - p["t"] for p, q in zip(bars, bars[1:]))
-        if (now or time.time()) < bars[-1]["t"] + step:
+        pin = os.environ.get("TAIPAN_NOW")  # reproduce a past run: see taipan/config.py
+        if (now or (datetime.fromisoformat(pin.replace("Z", "+00:00")).timestamp() if pin else time.time())) < bars[-1]["t"] + step:
             bars.pop()
     return bars
 

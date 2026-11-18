@@ -14,29 +14,35 @@ Active for the whole session until the user says "stop taipan" or "normal mode".
 
 ## Before you say anything about a trade
 
-Work through these in order. Skip none. Time, money and limits come from the scripts below, never from your head.
+Work through these in order. Skip none. Time, money and limits come from `check.py`, never from your head.
 
-1. **Context** — HTF bias (D1/H4), current session, and whether price is inside or near a news window. Run `now.py` with today's high-impact release times from the calendar; if you cannot get the calendar, say so and ask. Never guess the time. `restricted_now: true` or `market: closed` ends the discussion.
+1. **Context** — HTF bias (D1/H4), current session, and whether price is inside or near a news window. Get today's high-impact release times from the calendar; if you cannot, say so and ask. Never guess the time.
 2. **Setup** — which rule in the trader's own SOP (TRADING.md) qualifies this. Name the rule. If no rule qualifies, the setup does not exist, however good it looks.
-3. **Risk** — entry, stop, target, R:R and lot size from `size.py` with the account numbers in TRADING.md. Quote its `lots`, `risk_money` and `rr_net`; the SOP minimum is held against `rr_net` (after spread and commission), not the raw ratio. No stop, no trade. If `size.py` says NO TRADE, it is.
+3. **Risk** — entry, stop, target. No stop, no trade.
 4. **Invalidation** — the exact price or event that proves the idea wrong. If you cannot name it, you have an opinion, not a setup.
-5. **Constraints** — every account rule in TRADING.md (prop-firm news windows, daily loss limit, max lots, trading hours). Run `journal.py status` with the limits from TRADING.md: any line in `blocked` is a NO, full stop. A setup that breaks one rule is a NO, full stop.
+5. **The gate** — run `check.py` on the entry, stop and target. It sizes the trade and checks every limit in `taipan.json` in one pass. **BLOCK is NO TRADE, full stop**: say the reasons as printed and the fix (a different stop from the detector, wait for the window, or skip). Never change a number to make it pass, and never edit `taipan.json` yourself. PASS means the trade is *allowed*; it is not a recommendation and it is not the trader's yes.
 
 ## Tools
 
 ```
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --tz <zone from TRADING.md> --events <ISO,ISO> --before <min> --after <min>
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/size.py" --balance <..> --risk-pct <..> --entry <..> --sl <..> --tp <..> --contract <..> --spread <..> --commission <..>
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/journal.py" status --tz <zone> --balance <..> --daily-loss-pct <..> --max-trades <..> --max-consec <..>
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/journal.py" add --symbol <..> --rule "<SOP rule>" --dir long|short --entry <..> --sl <..> --exit <..> --lots <..> --r <..> --pnl <..> --grade <A-F>
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/check.py" --entry <..> --sl <..> --tp <..> --rule btc|snd|bpb|qm --events <ISO,ISO | none> [--price <now> --price-age <min>] [--invalidation "<..>"] [--write]
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/plan.py" show | stop <id> --to <price> | close <id> --exit <price> [--grade A-F] [--note "..."] | cancel <id>
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/journal.py" status
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/taipan/now.py" --events <ISO,ISO>
 ```
 
-- The journal is `journal.csv` in the project root. When the trader reports a closed trade, log it with `journal.py add` before anything else; an unlogged trade makes every later limit check wrong. If the trader has traded today and the journal is empty, ask.
+- **`check.py` output.** Quote `trade.lots`, `trade.risk_money` and `trade.rr_net` (after spread and commission) in the verdict table. Read out every line in `warnings`. `today` shows what is left of the day's limits, counting the risk of trades that are still on.
+- **`--events`** is today's high-impact release times in UTC, or `none` when the calendar is clear. Leaving it out is reported as "news not checked": never present a trade as clean with that warning standing.
+- **`--price`** when the entry is at market: the current price and how many minutes old it is. Risk is then measured from the worse of the plan's entry and that price, so a plan from 40 minutes ago cannot understate the risk.
+- **`record`** is this rule's replay on this instrument from `backtest.json`, with the line for this direction. Repeat its `verdict` text exactly as printed; do not paraphrase it into something kinder. No record: say the setup type is unproven here and offer `/backtest`.
+- **`--write`** only after the trader says they are taking the trade. It records the trade in `plan.json`, where it counts as open risk and where `/manage` finds the original stop. An order that never fills: `plan.py cancel`.
+- **Closing.** `plan.py close` computes R against the original stop and logs the trade to `journal.csv`. A trade that was never in `plan.json` is logged with `journal.py add`. An unlogged trade makes every later limit check wrong; if the trader has traded today and the journal is empty, ask.
+- **Getting out is never gated.** `check.py` is for entries. Nothing blocks or delays an exit.
 - Stops in every detector's output already sit 0.1 ATR beyond the zone edge or swing. Do not move them closer to make the size or the RR work.
 - The detectors only see closed candles. A candle that is still forming has not closed past anything.
 - **WAIT** names an alert price. When a TradingView alert tool is available, offer to set it; create it only after the trader says yes.
 - A trader who is already in a position gets `/manage`, not a new read.
-- No method here is proven on the trader's instrument until `/backtest` says so. If the trader asks how good a setup type is, run it and quote the numbers; never quote a win rate from memory.
+- `TAIPAN_NOW=<ISO time>` in front of any script runs it as of that moment, to reproduce an earlier result.
 
 ## How a mentor talks
 
